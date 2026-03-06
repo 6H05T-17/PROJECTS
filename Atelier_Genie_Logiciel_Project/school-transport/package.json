@@ -1,4 +1,17 @@
 {
+  "name": "school_transport",
+  "version": "1.0.0",
+  "description": "Gestion automatisée des transports scolaires",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "verify": "node node_scripts/verify-db.js",
+    "seed": "node node_scripts/seed-data.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",
@@ -8,17 +21,6 @@
     "jsonwebtoken": "^9.0.3",
     "jwt-decode": "^4.0.0",
     "mysql": "^2.18.1",
-    "mysql2": "^3.18.2",
-    "node": "^25.8.0",
-    "nodejs": "^0.0.0"
-  },
-  "name": "school_transport",
-  "version": "1.0.0",
-  "description": "Gestion automatisée des transports scolaires",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+    "mysql2": "^3.18.2"
+  }
 }

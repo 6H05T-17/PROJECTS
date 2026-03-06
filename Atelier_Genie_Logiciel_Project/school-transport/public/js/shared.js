@@ -1,0 +1,375 @@
+// ============================================
+// School Transport Management System - Shared JS
+// ============================================
+
+const API_BASE = 'http://localhost:3648/api';
+let authToken = localStorage.getItem('authToken');
+
+// ============================================
+// Theme Toggle
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleThemeBtn = document.getElementById('toggle-theme');
+    const htmlElement = document.documentElement;
+
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    applyTheme(savedTheme);
+
+    if (toggleThemeBtn) {
+        toggleThemeBtn.addEventListener('click', () => {
+            const currentTheme = htmlElement.classList.contains('theme-dark') ? 'dark' : 'light';
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+    }
+
+    // Initialize page-specific code
+    initializePage();
+});
+
+function applyTheme(theme) {
+    const htmlElement = document.documentElement;
+    const toggleThemeBtn = document.getElementById('toggle-theme');
+    
+    if (theme === 'dark') {
+        htmlElement.classList.add('theme-dark');
+        htmlElement.classList.remove('theme-light');
+        if (toggleThemeBtn) toggleThemeBtn.textContent = 'Mode clair';
+    } else {
+        htmlElement.classList.add('theme-light');
+        htmlElement.classList.remove('theme-dark');
+        if (toggleThemeBtn) toggleThemeBtn.textContent = 'Mode sombre';
+    }
+    localStorage.setItem('theme', theme);
+}
+
+// ============================================
+// Authentication Helpers
+// ============================================
+
+function setAuthToken(token) {
+    authToken = token;
+    localStorage.setItem('authToken', token);
+}
+
+function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
+
+function clearAuthToken() {
+    localStorage.removeItem('authToken');
+    authToken = null;
+}
+
+// ============================================
+// API Request Helper
+// ============================================
+
+async function apiRequest(endpoint, options = {}) {
+    const url = `${API_BASE}${endpoint}`;
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers,
+        });
+
+        if (response.status === 401) {
+            // Token expired or invalid
+            clearAuthToken();
+            redirectToLogin();
+            return null;
+        }
+
+        const data = response.ok ? await response.json() : null;
+
+        if (!response.ok) {
+            console.error(`API Error (${response.status}):`, data);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('API Request Error:', error);
+        return null;
+    }
+}
+
+// ============================================
+// Authentication Flow
+// ============================================
+
+async function loginAdmin(email, password) {
+    const data = await apiRequest('/auth/login-admin', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+
+    if (data && data.token) {
+        setAuthToken(data.token);
+        console.log('Admin login successful:', data);
+        return data;
+    }
+
+    return null;
+}
+
+async function loginParent(email, password) {
+    const data = await apiRequest('/auth/login-parent', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+
+    if (data && data.token) {
+        setAuthToken(data.token);
+        console.log('Parent login successful:', data);
+        return data;
+    }
+
+    return null;
+}
+
+async function logout() {
+    await apiRequest('/auth/logout', { method: 'POST' });
+    clearAuthToken();
+    console.log('Logged out');
+    redirectToLogin();
+}
+
+function redirectToLogin() {
+    alert('Veuillez vous connecter.');
+}
+
+// ============================================
+// Dashboard Helpers
+// ============================================
+
+async function getDashboardSummary(date) {
+    const response = await apiRequest(`/dashboard/summary?date=${date}`);
+    return response;
+}
+
+// ============================================
+// Student Helpers
+// ============================================
+
+async function getStudents() {
+    const response = await apiRequest('/students');
+    return response;
+}
+
+async function getStudent(id) {
+    const response = await apiRequest(`/students/${id}`);
+    return response;
+}
+
+async function updateStudent(id, data) {
+    const response = await apiRequest(`/students/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+    return response;
+}
+
+// ============================================
+// Route Helpers
+// ============================================
+
+async function getRoutes() {
+    const response = await apiRequest('/routes');
+    return response;
+}
+
+async function getRoute(id) {
+    const response = await apiRequest(`/routes/${id}`);
+    return response;
+}
+
+// ============================================
+// Planning Helpers
+// ============================================
+
+async function getPlanningData() {
+    const response = await apiRequest('/planning');
+    return response;
+}
+
+// ============================================
+// UI Utilities
+// ============================================
+
+function showNotification(message, type = 'info') {
+    const notificationDiv = document.createElement('div');
+    notificationDiv.className = `notification notification--${type}`;
+    notificationDiv.textContent = message;
+    notificationDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 20px;
+        background-color: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+        color: white;
+        border-radius: 0.375rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    `;
+
+    document.body.appendChild(notificationDiv);
+
+    setTimeout(() => {
+        notificationDiv.remove();
+    }, 3000);
+}
+
+// ============================================
+// Page-Specific Initialization
+// ============================================
+
+function initializePage() {
+    const page = getPageName();
+
+    switch (page) {
+        case 'index':
+            initDashboard();
+            break;
+        case 'students':
+            initStudents();
+            break;
+        case 'routes':
+            initRoutes();
+            break;
+        case 'planning':
+            initPlanning();
+            break;
+        case 'parent-portal':
+            initParentPortal();
+            break;
+        default:
+            break;
+    }
+}
+
+function getPageName() {
+    const path = window.location.pathname;
+    if (path.includes('index')) return 'index';
+    if (path.includes('students')) return 'students';
+    if (path.includes('routes')) return 'routes';
+    if (path.includes('planning')) return 'planning';
+    if (path.includes('parent-portal')) return 'parent-portal';
+    return 'unknown';
+}
+
+async function initDashboard() {
+    console.log('Initializing dashboard...');
+    
+    const today = new Date().toISOString().split('T')[0];
+    const summary = await getDashboardSummary(today);
+
+    if (summary) {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="card">
+                    <h2 class="card__title">Résumé du jour – ${summary.date}</h2>
+                    <div class="dashboard-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${summary.studentsTransported}</div>
+                            <div class="stat-label">Élèves transportés</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${summary.busesInService}</div>
+                            <div class="stat-label">Bus en service</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${summary.attendanceRate}%</div>
+                            <div class="stat-label">Taux de présence</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${summary.totalStudentsExpected}</div>
+                            <div class="stat-label">Élèves prévus</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+async function initStudents() {
+    console.log('Initializing students page...');
+    const students = await getStudents();
+    // Populate students list
+}
+
+async function initRoutes() {
+    console.log('Initializing routes page...');
+    const routes = await getRoutes();
+    // Populate routes list
+}
+
+async function initPlanning() {
+    console.log('Initializing planning page...');
+    const planning = await getPlanningData();
+    // Populate planning data
+}
+
+async function initParentPortal() {
+    console.log('Initializing parent portal...');
+    // Parent-specific initialization
+}
+
+// ============================================
+// Global Styles for Dashboard Stats
+// ============================================
+
+const style = document.createElement('style');
+style.textContent = `
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+    }
+
+    .stat-card {
+        background-color: #f3f4f6;
+        padding: 16px;
+        border-radius: 0.375rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #3b82f6;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
