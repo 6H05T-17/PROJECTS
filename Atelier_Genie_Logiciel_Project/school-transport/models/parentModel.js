@@ -2,6 +2,8 @@ const db = require('../config/database');
 
 // filepath: /home/ghost/Projects Space/PROJECTS/Atelier_Genie_Logiciel_Project/school-transport/models/parentModel.js
 
+const bcrypt = require('bcrypt');
+
 const ParentModel = {
     async findByEmail(email) {
         const [rows] = await db.query(
@@ -19,10 +21,12 @@ const ParentModel = {
         return rows[0];
     },
 
-    async create(fullname, phone, email, passwordHash) {
+    // accepts plain-text password and hashes internally
+    async create(fullname, phone, email, password) {
+        const password_hash = await bcrypt.hash(password, 10);
         const [result] = await db.query(
             'INSERT INTO parents (fullname, phone, email, password_hash) VALUES (?, ?, ?, ?)',
-            [fullname, phone, email, passwordHash]
+            [fullname, phone, email, password_hash]
         );
         return result.insertId;
     },
