@@ -4,6 +4,8 @@ CREATE DATABASE IF NOT EXISTS school_transport
 USE school_transport;
 
 -- Utilisateurs internes (ONG, MAIRIE, ADMIN)
+-- Position encoded in email format: firstname.position@organization.local
+-- Positions: director, hr_manager, accounting_manager
 CREATE TABLE users (
   id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL,

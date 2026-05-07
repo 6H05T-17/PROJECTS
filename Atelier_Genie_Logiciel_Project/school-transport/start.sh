@@ -19,10 +19,10 @@ fi
 
 echo -e "${GREEN}✅ Node.js trouvé ($(node -v))${NC}"
 
-# Check if npm modules are installed
+# Check if sudo npm modules are installed
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}📦 Installation des dépendances...${NC}"
-    npm install
+    sudo npm install
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ Erreur lors de l'installation${NC}"
         exit 1
@@ -33,19 +33,19 @@ else
 fi
 
 # Verify database connection
-echo -e "\n${YELLOW}🔍 Vérification de la base de données...${NC}"
-npm run verify
-if [ $? -ne 0 ]; then
-    echo -e "${YELLOW}⚠️  Voulez-vous insérer des données de test? (y/n)${NC}"
-    read -r response
-    if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
-        npm run seed
-    fi
-fi
+# echo -e "\n${YELLOW}🔍 Vérification de la base de données...${NC}"
+# npm run verify
+# if [ $? -ne 0 ]; then
+#     echo -e "${YELLOW}⚠️  Voulez-vous insérer des données de test? (y/n)${NC}"
+#     read -t 10 -r response
+#     if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
+#         sudo npm run seed
+#     fi
+# fi
 
 # Start the app
 echo -e "\n${BLUE}════════════════════════════════════════════${NC}"
-echo -e "${GREEN}🚀 Démarrage du serveur...${NC}"
+echo -e "${GREEN}🚀 Démarrage du serveur avec nodemon...${NC}"
 echo -e "${BLUE}════════════════════════════════════════════${NC}\n"
 
-npm start
+sudo npm run dev
