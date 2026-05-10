@@ -79,6 +79,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Update navigation visibility based on user role
+            if (typeof updateNavigationVisibility === 'function') {
+                updateNavigationVisibility();
+            }
+            
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {

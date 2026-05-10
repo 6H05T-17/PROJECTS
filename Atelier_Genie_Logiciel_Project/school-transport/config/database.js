@@ -7,7 +7,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'school_transport',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  connectTimeout: 10000,
+  charset: 'utf8mb4',
+  timezone: '+00:00'
 });
 
 module.exports = pool;

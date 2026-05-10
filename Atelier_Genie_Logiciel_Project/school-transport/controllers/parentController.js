@@ -47,3 +47,14 @@ exports.getStudentAttendance = async (req, res) => {
         res.status(500).json({ message: 'Erreur serveur' });
     }
 };
+
+exports.getCurrentUser = async (req, res) => {
+    try {
+        const parentId = req.user.id;
+        const parentDetails = await ParentModel.findById(parentId);
+        res.json(parentDetails);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Erreur serveur' });
+    }
+};

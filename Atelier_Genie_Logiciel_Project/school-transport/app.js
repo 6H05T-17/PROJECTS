@@ -8,6 +8,7 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const planningRoutes = require('./routes/planningRoutes');
 const routeRoutes = require('./routes/routeRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const parentRoutes = require('./routes/parentRoutes');
 const { authenticate } = require('./middleware/auth');
 
 require('dotenv').config();
@@ -39,6 +40,7 @@ app.use('/api/attendance', authenticate, attendanceRoutes);
 app.use('/api/planning', authenticate, planningRoutes);
 app.use('/api/routes', authenticate, routeRoutes);
 app.use('/api/dashboard', authenticate, dashboardRoutes);
+app.use('/api/parent', authenticate, parentRoutes);
 
 // 404 handler
 app.use((req, res) => {

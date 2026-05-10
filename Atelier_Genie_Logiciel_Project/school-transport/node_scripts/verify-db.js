@@ -1,12 +1,19 @@
-const db = require('../config/database');
 require('dotenv').config();
 
 async function verifyConnection() {
     console.log('🔍 Vérification de la connection à la base de données...\n');
     
     try {
-        // Test basic connection
-        const connection = await db.getConnection();
+        // Import database config after dotenv is loaded
+        const db = require('../config/database');
+        
+        // Test basic connection with timeout
+        const connection = await Promise.race([
+            db.getConnection(),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
+            )
+        ]);
         console.log('✅ Connection réussie à MySQL');
         
         // Check if database exists

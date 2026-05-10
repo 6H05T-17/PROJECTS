@@ -33,15 +33,15 @@ else
 fi
 
 # Verify database connection
-# echo -e "\n${YELLOW}🔍 Vérification de la base de données...${NC}"
-# npm run verify
-# if [ $? -ne 0 ]; then
-#     echo -e "${YELLOW}⚠️  Voulez-vous insérer des données de test? (y/n)${NC}"
-#     read -t 10 -r response
-#     if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
-#         sudo npm run seed
-#     fi
-# fi
+echo -e "\n${YELLOW}🔍 Vérification de la base de données...${NC}"
+npm run verify
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}⚠️  Voulez-vous insérer des données de test? (y/n)${NC}"
+    read -t 10 -r response
+    if [ "$response" = "y" ] || [ "$response" = "Y" ]; then
+        sudo npm run seed
+    fi
+fi
 
 # Start the app
 echo -e "\n${BLUE}════════════════════════════════════════════${NC}"

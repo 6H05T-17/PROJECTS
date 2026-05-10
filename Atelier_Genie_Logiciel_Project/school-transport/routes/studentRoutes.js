@@ -1,18 +1,7 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
+const db = require('../config/database');
 
 const router = express.Router();
-
-// Database connection pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'school_transport',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
 
 // GET /api/students with filters
 router.get('/', async (req, res) => {
@@ -34,9 +23,7 @@ router.get('/', async (req, res) => {
             params.push(active === 'true' ? 1 : 0);
         }
 
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(query, params);
-        connection.release();
+        const [rows] = await db.query(query, params);
 
         res.json(rows);
     } catch (error) {
@@ -50,9 +37,7 @@ router.post('/', async (req, res) => {
         const { name, email, school, stop, active } = req.body;
         const query = 'INSERT INTO students (name, email, school, stop, active) VALUES (?, ?, ?, ?, ?)';
         
-        const connection = await pool.getConnection();
-        const [result] = await connection.execute(query, [name, email, school, stop, active || 1]);
-        connection.release();
+        const [result] = await db.query(query, [name, email, school, stop, active || 1]);
 
         res.status(201).json({ id: result.insertId, message: 'Student created' });
     } catch (error) {
@@ -67,9 +52,7 @@ router.put('/:id', async (req, res) => {
         const { name, email, school, stop, active } = req.body;
         const query = 'UPDATE students SET name = ?, email = ?, school = ?, stop = ?, active = ? WHERE id = ?';
         
-        const connection = await pool.getConnection();
-        await connection.execute(query, [name, email, school, stop, active, id]);
-        connection.release();
+        await db.query(query, [name, email, school, stop, active, id]);
 
         res.json({ message: 'Student updated' });
     } catch (error) {
@@ -83,9 +66,7 @@ router.delete('/:id', async (req, res) => {
         const { id } = req.params;
         const query = 'UPDATE students SET active = 0 WHERE id = ?';
         
-        const connection = await pool.getConnection();
-        await connection.execute(query, [id]);
-        connection.release();
+        await db.query(query, [id]);
 
         res.json({ message: 'Student deleted (soft delete)' });
     } catch (error) {

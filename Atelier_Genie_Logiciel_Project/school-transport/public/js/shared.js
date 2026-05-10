@@ -53,13 +53,53 @@ function setAuthToken(token) {
     localStorage.setItem('authToken', token);
 }
 
+function setUserRole(role) {
+    localStorage.setItem('userRole', role);
+}
+
+function setUserRoleFromEmail(email) {
+    // Determine role based on email domain
+    if (email.includes('@parent.local') || email.includes('parent@test.com') || email.includes('marie@test.com') || email.includes('jean@test.com') || email.includes('ali@test.com')) {
+        setUserRole('PARENT');
+    } else if (email.includes('@ong.local') || email.includes('@mairie.local') || email.includes('admin@test.com') || email.includes('ong@test.com') || email.includes('city@test.com')) {
+        setUserRole('ADMIN');
+    } else {
+        setUserRole('UNKNOWN');
+    }
+}
+
+function getUserRole() {
+    return localStorage.getItem('userRole');
+}
+
 function getAuthToken() {
     return localStorage.getItem('authToken');
 }
 
 function clearAuthToken() {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
     authToken = null;
+}
+
+function updateNavigationVisibility() {
+    const userRole = getUserRole();
+    const dashboardLinks = document.querySelectorAll('a[href="./dashboard.html"]');
+    const parentPortalLinks = document.querySelectorAll('a[href="./parent-portal.html"]');
+    
+    if (userRole === 'PARENT') {
+        // Hide Dashboard links, show Parent Portal links
+        dashboardLinks.forEach(link => link.style.display = 'none');
+        parentPortalLinks.forEach(link => link.style.display = 'inline-block');
+    } else if (userRole === 'ADMIN') {
+        // Show Dashboard links, completely hide Parent Portal links for all admin roles
+        dashboardLinks.forEach(link => link.style.display = 'inline-block');
+        parentPortalLinks.forEach(link => link.style.display = 'none');
+    } else {
+        // Unknown role - show Dashboard only as safe fallback
+        dashboardLinks.forEach(link => link.style.display = 'inline-block');
+        parentPortalLinks.forEach(link => link.style.display = 'none');
+    }
 }
 
 // ============================================
@@ -117,6 +157,7 @@ async function loginAdmin(email, password) {
 
     if (data && data.token) {
         setAuthToken(data.token);
+        setUserRoleFromEmail(email);
         console.log('Admin login successful:', data);
         return data;
     }
@@ -132,6 +173,7 @@ async function loginParent(email, password) {
 
     if (data && data.token) {
         setAuthToken(data.token);
+        setUserRoleFromEmail(email);
         console.log('Parent login successful:', data);
         return data;
     }
@@ -156,6 +198,30 @@ function redirectToLogin() {
 
 async function getDashboardSummary(date) {
     const response = await apiRequest(`/dashboard/summary?date=${date}`);
+    return response;
+}
+
+// ============================================
+// Parent Portal Helpers
+// ============================================
+
+async function getParentStudents() {
+    const response = await apiRequest('/parent/my-students');
+    return response;
+}
+
+async function getStudentTrips(studentId) {
+    const response = await apiRequest(`/parent/student-trips/${studentId}`);
+    return response;
+}
+
+async function getStudentAttendance(studentId) {
+    const response = await apiRequest(`/parent/student-attendance/${studentId}`);
+    return response;
+}
+
+async function getCurrentUser() {
+    const response = await apiRequest('/parent/current-user');
     return response;
 }
 
@@ -238,6 +304,9 @@ function showNotification(message, type = 'info') {
 
 function initializePage() {
     const page = getPageName();
+    
+    // Update navigation visibility based on user role
+    updateNavigationVisibility();
 
     switch (page) {
         case 'index':
@@ -326,7 +395,94 @@ async function initPlanning() {
 
 async function initParentPortal() {
     console.log('Initializing parent portal...');
-    // Parent-specific initialization
+    
+    try {
+        // Get parent information
+        const token = getAuthToken();
+        if (!token) return;
+        
+        // Fetch current user details from database
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+            // Display parent info
+            const parentNameElement = document.getElementById('parent-name');
+            const parentEmailElement = document.getElementById('parent-email');
+            
+            if (parentNameElement) {
+                parentNameElement.textContent = currentUser.fullname || 'Parent';
+            }
+            if (parentEmailElement) {
+                parentEmailElement.textContent = currentUser.email;
+            }
+        }
+        
+        // Get parent's students
+        const students = await getParentStudents();
+        if (students && students.length > 0) {
+            displayChildren(students);
+        } else {
+            document.getElementById('children-container').innerHTML = 
+                '<p style="color: var(--color-text-muted);">Aucun enfant trouvé</p>';
+        }
+        
+        // Load attendance history for first student
+        if (students && students.length > 0) {
+            const attendance = await getStudentAttendance(students[0].id);
+            if (attendance && attendance.length > 0) {
+                displayAttendanceHistory(attendance);
+            } else {
+                document.getElementById('attendance-history').innerHTML = 
+                    '<tr><td colspan="6" style="text-align: center; color: var(--color-text-muted);">Aucune donnée de présence trouvée</td></tr>';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error initializing parent portal:', error);
+        showNotification('Erreur lors du chargement des données', 'error');
+    }
+}
+
+function displayChildren(students) {
+    const container = document.getElementById('children-container');
+    if (!container) return;
+    
+    const childrenHtml = students.map(student => `
+        <div class="card">
+            <h3 style="margin: 0 0 8px 0; color: var(--color-primary);">${student.fullname}</h3>
+            <p style="margin: 4px 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong>École:</strong> ${student.school_name || 'N/A'}
+            </p>
+            <p style="margin: 4px 0; color: var(--color-text-muted); font-size: 0.9rem;">
+                <strong>Arrêt:</strong> ${student.stop_name || 'N/A'}
+            </p>
+        </div>
+    `).join('');
+    
+    container.innerHTML = childrenHtml;
+}
+
+function displayAttendanceHistory(attendance) {
+    const tbody = document.getElementById('attendance-history');
+    if (!tbody) return;
+    
+    const attendanceHtml = attendance.map(record => `
+        <tr>
+            <td>${new Date(record.date).toLocaleDateString('fr-FR')}</td>
+            <td>${record.student_name}</td>
+            <td>${record.route_name}</td>
+            <td>${record.plate_number}</td>
+            <td>
+                <span class="badge ${record.present ? 'badge--success' : 'badge--danger'}">
+                    ${record.present ? 'Présent' : 'Absent'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn--sm" onclick="viewDetails('${record.date}')">Détails</button>
+            </td>
+        </tr>
+    `).join('');
+    
+    tbody.innerHTML = attendanceHtml;
 }
 
 // ============================================

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Test Navigation Visibility</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .nav-link { margin: 5px; padding: 8px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
+        .nav-link.hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Test Navigation Visibility</h1>
+    
+    <div class="test-section">
+        <h2>Simulate Parent Login</h2>
+        <button onclick="simulateParentLogin()">Login as Parent (jean@test.com)</button>
+        <p>Expected: Only "Portail Parent" should be visible</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Simulate Admin Login</h2>
+        <button onclick="simulateAdminLogin()">Login as Admin (admin@test.com)</button>
+        <p>Expected: Only "Dashboard" should be visible</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Navigation Test</h2>
+        <nav>
+            <a href="./dashboard.html" class="nav-link" id="dashboard-link">Dashboard</a>
+            <a href="./parent-portal.html" class="nav-link" id="parent-portal-link">Portail Parent</a>
+        </nav>
+    </div>
+    
+    <div class="test-section">
+        <h2>Current Status</h2>
+        <p>User Role: <span id="current-role">Not logged in</span></p>
+        <p>Dashboard Link: <span id="dashboard-status">Hidden</span></p>
+        <p>Parent Portal Link: <span id="parent-portal-status">Hidden</span></p>
+    </div>
+
+    <script>
+        // Simulate the shared.js functions
+        function setUserRole(role) {
+            localStorage.setItem('userRole', role);
+            updateStatus();
+        }
+        
+        function getUserRole() {
+            return localStorage.getItem('userRole');
+        }
+        
+        function updateNavigationVisibility() {
+            const userRole = getUserRole();
+            const dashboardLinks = document.querySelectorAll('a[href="./dashboard.html"]');
+            const parentPortalLinks = document.querySelectorAll('a[href="./parent-portal.html"]');
+            
+            if (userRole === 'PARENT') {
+                dashboardLinks.forEach(link => link.style.display = 'none');
+                parentPortalLinks.forEach(link => link.style.display = 'inline-block');
+            } else if (userRole === 'ADMIN') {
+                dashboardLinks.forEach(link => link.style.display = 'inline-block');
+                parentPortalLinks.forEach(link => link.style.display = 'none');
+            } else {
+                dashboardLinks.forEach(link => link.style.display = 'inline-block');
+                parentPortalLinks.forEach(link => link.style.display = 'inline-block');
+            }
+            updateStatus();
+        }
+        
+        function updateStatus() {
+            const role = getUserRole();
+            const dashboardLink = document.getElementById('dashboard-link');
+            const parentPortalLink = document.getElementById('parent-portal-link');
+            
+            document.getElementById('current-role').textContent = role || 'Not logged in';
+            document.getElementById('dashboard-status').textContent = 
+                dashboardLink && dashboardLink.style.display !== 'none' ? 'Visible' : 'Hidden';
+            document.getElementById('parent-portal-status').textContent = 
+                parentPortalLink && parentPortalLink.style.display !== 'none' ? 'Visible' : 'Hidden';
+        }
+        
+        function simulateParentLogin() {
+            setUserRole('PARENT');
+            updateNavigationVisibility();
+        }
+        
+        function simulateAdminLogin() {
+            setUserRole('ADMIN');
+            updateNavigationVisibility();
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNavigationVisibility();
+        });
+    </script>
+</body>
+</html>

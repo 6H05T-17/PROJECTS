@@ -75,6 +75,30 @@ const ParentModel = {
             ORDER BY r.departure_time ASC
         `, [studentId]);
         return rows;
+    },
+
+    async isParentOfStudent(parentId, studentId) {
+        const [rows] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM parent_students ps
+            WHERE ps.parent_id = ? AND ps.student_id = ?
+        `, [parentId, studentId]);
+        return rows[0].count > 0;
+    },
+
+    async getStudentAttendance(studentId, limit = 30) {
+        const [rows] = await db.query(`
+            SELECT a.present, t.date, r.name AS route_name, b.plate_number, s.fullname AS student_name
+            FROM attendances a
+            JOIN trip_days t ON a.trip_day_id = t.id
+            JOIN routes r ON t.route_id = r.id
+            JOIN buses b ON r.bus_id = b.id
+            JOIN students s ON a.student_id = s.id
+            WHERE a.student_id = ?
+            ORDER BY t.date DESC
+            LIMIT ?
+        `, [studentId, limit]);
+        return rows;
     }
 };
 
